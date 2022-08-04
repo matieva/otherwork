@@ -1,1 +1,104 @@
+authentication - someone is who they say they are. userame and password SQL Server Login. Windows authentication remembered login. 
+authorization - what someone is allowed to do. user or role. omega uses role. 
+Server Roles - sysadmin, securityadmin
+Database Roles - af_developer, af_user, db_accessadmin, db_owner, db_securityadmin. Appframe roles, usually af role. developer will have both af and db access.
+connecting to sql server.
+Login - server specific, used for authentication, may be added to server roles. Server roles will be added to you login, not your user.
+User - user will be created in each of your databases and added to database roles.
+rocommended security measures - authentication log, firewall, password requirements, handle permissions correctly in views and similiar. 
+SQL Injection - be ware. prevent
+permissions - needed for all objects (SELECT, INSERT, EXECUTE). sstp_Database_Maintenance_ApplyPermissions
+af_user (Appframe User) - EXECUTE permission scaler functions, stored procedure, table types. SELECT permission table valued functions, views.
+    INSERT, UPDATE, DELETE permission through views. 
+af_developer (Appframe developer) - + from af_user is view definition of all objects. F1. scalar functions, stored procedure, table types, table valued functions, tables, views.
 
+appframe definitions
+Domain - usually project or company
+Role - table permissions, capability
+User and Login mapped together. map our login to the user with the same name. suser sname function you will retrieve your server login name.
+    But in appframe we map this to the user wit the same name, so this is also the name of the user. two different things just mapped together.
+difference between select data and change data. 
+
+
+tbv- table view (Current Domain)
+atbv - table view curremt domain
+abx - table view all domains
+aviw - View. application view not application table view. 
+My Permissions(Current Domain). sview_System_MyPermissions_CurrentDomain. Login SUSER_SNAME() how we distinguish who are you. 
+atbl - insert triggers. A trigger is a special type of stored procedure that automatically runs when an event occurs in the database server
+
+
+
+
+exception i appframe security checks (this is part of trigger, the setup is as following insert, transaction, delete ):
+BEGIN
+    GOTO RollbackTransaction
+END
+
+RollbackTransaction:
+    DECLARE @RaiseErrorUser NVARCHAR(128) = SUSER_SNAME()¨
+    RAISEERROR('no insert permission', 18, 1, @RaiseErrorUser)
+    ROLLBACK TRANSACTION 
+    RETURN
+ContinueTransaction:
+    IF UPDATE(CUT)
+
+custom trigger logic, not need to go thorugh when we use CUT function in ContinueTransaction
+ + never allowed to skip security checks if you are updating something
+
+USE Academy DB. Msg 916, not able to access the database under the current security context.
+    trying to access a database you dont have access to
+ 1. Access to the server with login
+ 2. Have the access/permissions to the database.
+create a database user map it to its login then they will be able to run this. aka the login was not mapped to a user in the AcademyDB database. 
+
+SELECT * FROM stbv_System_Users. Msg 229, permisson was denied on the object 'stbv_System_Users', database 'AcademyDB', schema 'dbo'.
+sql server level or appframe level?
+testuser does not have the af_user role, or apply permissions have not been executed since stbv_System_Users was created. 
+add testuser to the af_user role.  
+-tbv
+
+
+SELECT * FROM stbl_System_Users. Msg 229, SELECT permission was denied on the object 'stbl_Systems_Users', database 'AcademyDB', schema 'dbo'.
+testuser is only a member of a af_user, not db_datareader or db_owner. therefore it does not have access to SELECT from tbl's.
+-- ser at dette har noe med database å gjøre. 
+- tbl
+
+INSERT INTO stbl_System_Users
+    (Login, LastName)
+VALUES
+    ('test', 'Test')
+Msg 229, The insert permission was denied on the object. 'stbl_System_Users', database 'AcademyDB', Schema 'dbo'.
+user has select but not insert permission in the database.
+testuser is only a member of af_user, not db_datawriter, db_owner or sysadmin which are required for handling tables directly. 
+-- ser at dette har noe med database å gjøre. 
+- tbl
+
+
+INSERT INTO stbv_System_Users
+    (Login, LastName)
+VALUES
+    ('test', 'Test')
+Msg 3609, the transaction ended in the trigger. The batch has been aborted
+Msg 50000, Procedure stbl_System_Users_ITrig,...
+    ----no insert permissions on the table: stbl_system_users for user testuser_nopermissions----
+---- we are in appframe role. 
+we dont have access to insert in the view. 
+can do other things but not this.
+error raised by appfram code (in INSERT trigger)
+Testuser is not in a role that has graninsert = 1 for atbl_SupplyChainMgmt_Articles. 
+
+49:00
+CREATE VIEW aviw_Personnel_PersonsEducations 
+AS 
+SELECT
+    PE.*,
+    P.Fullname, P.DateOfBirth, P.JobTitle
+    FROM atbl_Personnel_PersonsEducations AS PE P WITH (NOLOCK)
+    INNER JOIN atbl_Personnel_Persons AS P WITH (NOLOCK)
+        ON P.PersonID = PE.PersonID
+
+from checks should be a view at the table. 
+this is a security threat   
+
+standard appframe security. 

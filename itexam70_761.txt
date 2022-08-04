@@ -1,0 +1,102 @@
+T-SQL, which stands for Transact-SQL and is sometimes referred to as TSQL, is an extension of the SQL language
+ used primarily within Microsoft SQL Server. This means that it provides all the functionality of SQL but with
+  some added extras.
+
+QUESTION 1
+- list all provinces that have atleast two large cities
+- large city is has population of at least one million residents. 
+- query must return provinceid, provincename and a derived column named LargeCityCount that represents
+  the total count of large cities for the province
+
+query must return
+tblProvince.ProvinceID
+tbl.Province.ProvinceName
+a derived column named LargeCityCount that represent the total count of large cities for the province
+
+
+SELECT P.ProvinceID, P.ProvinceName, CitySummary.LargeCityCount
+FROM tblProvince P
+--FROM tblProvince AS P
+CROSS JOIN ( SELECT COUNT(*) AS LargeCityCount FROM tblCity C WHERE C.Population>=1000000 ) CitySummary
+WHERE CitySummary.LargeCityCount >=2
+
+
+
+QUESTION 2
+- list all provinces that have at least two large cities. A large city is at least one million residents. 
+
+query must return
+tblProvince.ProvinceID
+tblProvince.ProvinceName
+a derived column named LargeCityCount that represents the total count of large cities for the province
+
+SELECT P.ProvinceID, P.ProvinceName, CitySummary.LargeCityCount
+-- CitySummary.LargeCityCount HVOR KOMMER DEN FRA
+FROM tblProvince P
+CROSS APPLY (
+    SELECT COUNT(*) AS LargeCityCount FROM tblCity C
+    WHERE C.Population>=1000000 AND C.ProvinceID = P.ProvinceID
+) CitySummary
+WHERE CitySummary.LargeCityCount >=2
+
+The CROSS APPLY operator returns only those rows from the left table expression (in its final output)
+ if it matches with the right table expression. In other words, the right table expression returns 
+ rows for the left table expression match only.
+
+
+
+
+
+
+
+QUESTION 3
+- designing a customer direcotry application. 
+- application must list customers by the area code of their phone number. +475 bryne
+- indexed view that contains the area and phone number of all customers
+- return the area code from the PhoneNumber field.
+
+CREATE FUNCTION AreaCode (
+    @phoneNumber nvarchar(20)
+)
+RETURNS nvarchar(10)
+WITH nvarchar(10)
+AS
+BEGIN
+    DECLARE @areaCode
+    SELECT TOP 1 @areaCode = value FROM STRING_SPLIT(@phoneNumber, '-')
+    -- KOFFER TOP 1? --> første delen av tallet. 425-555-0187
+    RETURN @areaCode
+END
+
+--- DOES THE SOLUTION MEET THE GOAL A.YES
+because
+- function returns nvarchar(10) value.
+- schemabinding is used 
+- SELECT TOP 1 gives a single value.
+-------------------------------------------------------------------------------------------------------------------
+
+QUESTION 4
+TSQL query that returns
+- customer number
+- customer contact name
+- the date the order was placed, with a name of DateofOrder
+- a column named Spaceperson, formatted with the employee first name, and the employee last name
+- orders for customers where the employee identifier equals 4
+
+output
+- be sorted by order dat, newest order first.
+- return only the most recent order for each customer
+
+SELECT c.custid, contactname, MAX(orderdate) AS DateofOrder, e.firstname + '' + e.lastname AS Salesperson
+FROM Sales.Customer AS c
+INNER JOIN Sales.Orders AS o c.custid = o.custid
+INNER JOIN HR.Employee AS e ON o.empid = e.empid
+GROUP BY c.custid, contactname, firstname, lastname, o.empid
+HAVING o.empid = 4 
+ORDER BY DateofOrder DESC
+
+
+
+
+
+

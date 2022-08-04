@@ -1,5 +1,6 @@
--- SQL3 Basic Query
 
+<<<<<<< HEAD
+=======
 
 -- Gjalt når vi tok SELECT DISTINCT
 --SQL Server Hash Match Aggregate operator is used to process the large tables that are not sorted using an index.
@@ -185,3 +186,5 @@ FOR UPDATING AND DELETING REMEMBER THE WHERE CLOSS
 
 */
 
+
+>>>>>>> 3b56d0bb0d87165927b6669ed67fae890d23037d

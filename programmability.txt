@@ -1,1 +1,157 @@
++ error handeling
++ debugging
++ functions
++ variables [svalar-values, table-valued]
++ temporary table
++ triggers
++ user-defined table type
++ stored procedure
 
+ERROR HANDLING
+- TRY-CATCH, try is error catch in catch-block
+- THROW, to throw errors. similar ro raise error
+    prinnt, xact_abort, use throw instead in new applications
+- RETURN
+- transaction handling
+
+
+
+if you write SELECTION ... RETURN you are done, if there is a SELECTION afterwards it will not be executed 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+THROW need to specify ID, anything from 50000 and above.
+
+    RAISERROR('Error', 15, 1)
+    RAISERROR('Error', 15, 2)
+    RAISERROR('Error', 15, 3)
+RAISERROR('Error with low severity!', 10, 1), 10 is a severity parameter, 15 medium severity, 18 high severity, 24 highest severity.
+the last parameter aka 1, is a state parameter. not much used, but could be useful if you have the same error.
+    run a script and three different cases can return the same error. to show which of the three cases has the actual error. output shows which state
+
+raise error compared to print 
+DECLARE @MyString AS NVARCHAR(10) = N'Test'
+RAISERROR('My message takes %s as a parameter', 10, 1, @MyString)
+
+DECLARE @MyInt AS INT =7
+RAISERROR('Number to present to user: %d', 18, 1, @MyInt)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+another way:
+DECLARE @DIFF AS INT
+DECLARE @StartOfScript AS DATETIME2(3) = GETDATE()
+SELECT FirstName, COUNT(*)
+    FROM atbl_Personnel_Persons WITH(NOLOCK)
+    GROUP BY FirstName
+SET @DIFF = DATEDIFF(MILLISECOND, @StartOfScript, GETDATE())
+# set the diff to difference in time from now after the queries and before we started the querie
+# raise this with the parameter.
+RAISERROR('Debug info, Persons Grouping took %d milliseconds', 10, 1, @DIFF) WITH NOWAIT
+# the output gives you the time it took to run the queries. for when you have multiple batches to find when it went wrong. when you have a large script and something takes a long time. 
+# printing out as a message, paramter 10 does not affect the execution it is just printing message. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+TRY-CATCH
+force an error to try and catch it. 
+BEGIN TRY
+    SELECT 1/0 AS MyUnvalidValue 
+END TRY
+BEGIN CATCH
+    DECLARE @ErrorMessahe NVARCHAR(MAX) = ERROR_MESSAGE();
+    SELECT @ErrorMessage AS MyErrorMessage
+END CATCH
+#output divided by zero error encountered, returns a value does not give out the error. not throwing an error.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+TRANSACTION, a deal 
+BEGIN TRANSACTION
+#start a transaction
+BEGIN TRY  
+    SELECT 1/0 AS MyUnvalidValue
+    # try to do something, if we are able to do it:
+    COMMIT TRANSACTION
+    # then commit the transaction
+END TRY 
+# if not then we are sent to the catch block. 
+BEGIN CATCH
+    IF @@TRANSACTION > 0
+    # if this is true then it is an open transaction
+    BEGIN
+        DECLARE @ErrorMessage NVARCHAR(MAX) = ERROR_MESSAGE();
+        SELECT @ErrorMessage
+        ROLLEBACK TRANSACTION
+        # try to run a rollback transaction when you dont have a transaction then you will get a msg 16. when you dont have control over your open transaction
+        # applies apis. insert would not be possible here
+
+    END
+END CATCH
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+BEGIN TRANSACTION
+BEGIN TRY
+    DECLARE @MyCount AS INT = (SELECT COUNT(*)
+                                FROM atbl_Personnel_Persons WITH(NOLOCK))
+                                WHERE FullName = N'A name that does not exist'
+    IF @MyCount = 0 
+    # Force error if we dont have valid data. THIS IS A SECURITY CHECK
+    BEGIN
+        RAISEERROR('This will not show', 18, 1)
+        # raise some error here. possible to not give information here and write on the second RAISEERROR 'contact your administrator'
+    END
+    COMMIT TRANSACTION
+END TRY
+BEGIN CATCH
+    IF @@TRANSACTION > 0
+    BEGIN
+        SELECT 'Can select a dataset to return'
+        RAISERROR('Print this errormessage', 18, 1)
+        # we want to show some error here. just output error so that hacker could not guess the error. 
+        ROLLBACK TRANSACTION
+    END
+END CATCH
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+format
+
+BEGIN TRY
+    THROW
+END TRY
+BEGIN CATCH
+    THROW
+END CATCH
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+PROGRAMMABILITY OBJECTS
+
++ BUILT IN FUNCTIONS 
+aggregates
+    sum, max, min, avg, count 
+date functions 
+    getdate, year, datepart, datediff, dateadd, eomonth
+security 
+    suser_sname, is_srvrolemember
+conversion
+    cast('123' AS INT), CONVERT(INT, '123')
+
+
++ LOGIC
+- if statement, cannot write inside of a query
+- supports whileloop, not for-loop. use with caution, set-operations much better than looping. 
+- case, similiar to if but used in queries
+
++ VARIABLES
+- life cycle: stats from the point where it is declared and ends at the end of the batch. F5
+- scalar variable: all data types,
+    DECLARE @MyVariable AS BIT
+- table variable
+    DECLARE @MyTable AS TABLE (ID INT, TITLE NVARCHAR(50))
+    bad performance: very poor cardinality estimates, modifications are serialized.
+
+
+23:50 temporary tables

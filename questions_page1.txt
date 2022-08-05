@@ -1,1 +1,18 @@
+question 1.
+
++ list all provinces that have at least two large cities
++ large city is population of at least one million residents
++ query return these columns
+    - tblProvince.ProvinceId
+    - tblProvince.ProvinceName
+    - a derived column named LargeCityCount, gives total count of large cities for the province
+
+-- TSQL
+SELECT ProvinceId, p.ProvinceName, CitySummary.LargeCityCount
+FROM tblProvince P 
+CROSS JOIN (
+    SELECT COUNT(*) AS LargeCityCount FROM tblCity C 
+    WHERE C.Population>=1000000
+) CitySummary
+WHERE CitySummary.LargeCityCount >= 2
 

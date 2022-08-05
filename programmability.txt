@@ -147,11 +147,53 @@ conversion
 
 + VARIABLES
 - life cycle: stats from the point where it is declared and ends at the end of the batch. F5
-- scalar variable: all data types,
+- scalar variable: all data types are supported,
     DECLARE @MyVariable AS BIT
 - table variable
     DECLARE @MyTable AS TABLE (ID INT, TITLE NVARCHAR(50))
     bad performance: very poor cardinality estimates, modifications are serialized.
+    not recommended to use table variable because of performance
+
+RECOMMENDED TO USE:
+temporary tables!
+CREATE TABLE #MyTable (
+    ID INT,
+    Description NVARCHAR(128)
+)
+- like sql server tables, except
+    created in tempdb instead of current db and is available in memory
+    only available for current connection
+    life cycle: until dropped explicitly or the ended session
+-> no cases where table variables are better than temp tables, so always use temp tables.
+
+1. table variable @ 
+2. temporary tables #
+
+FROM EXAMPLE
+rollback transaction -> rolled back, undoing things.
+@test is not a real object, with stat, loiging etc i motsetning til (#test) 
+--> SELECT * FROM @Test is treated different when rollback transaction.
+--CASE--:
+DROP TABLE IF EXISTS #Test
+CREATE TABLE #Test
+(ID INT)
+DECLARE @Test AS TABLE --endre til scalar variable
+(ID INT)
+BEGIN TRANSACTION
+INSERT INTO #Test (ID) VALUES (1)
+INSERT INTO @Test (ID) VALUES (1)
+ROLLBACK TRANSACTION
+SELECT *
+	FROM @Test
+SELECT *
+	FROM #Test
 
 
-23:50 temporary tables
+umderstanding .. declare and then select from it. 
+
+
+TRIGGER EXAMPLES
++ never use LOGON trigger 
++ DDL data definition logic, available on server and database level 
+38:00
+

@@ -1,1 +1,348 @@
+QUESTION 1
++ run this table
+CREATE TABLE Products(
+    ProductID int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    ProductName nvarchar(100) NULL,
+    UnitPrice decimal(18,2) NOT NULL,
+    UnitsInStock int NOT NULL,
+    UnitsOnOrder int NULL
+)
+
+
++ this one is already stored
+CREATE PROCEDURE InsertProduct
+    @ProductName nvarchar(100),
+    @UnitPrice decimal(18,2),
+    @UnitsInStock int,
+    @UnitsOnOrder int
+AS
+BEGIN
+    INSERT INTO Products(ProductName, ProductPrice,ProductsInStock,ProductsOnOrder)
+    VALUES (@ProductName, @UnitPrice, @UnitInStock, @UnitsOnOrder)
+END 
+
+
++ procedure, contain programming statements that perform operations in the database, blant annet. prodecure ble gjort på forhånd. 
+
++ meet the following requirements:
+    - insert product records as a single unit of work
+    - return error number 51000 when a product fails to insert into the database. 
+    - if a product record insert operation fails, the product information must not be permanently written to the database. 
+
+
++ solution
+ALTER PROCEDURE InsertProduct
+--- initially var det CREATE PROCEDURE. forskjell på ALTER og CREATE? fordelen med å bruke ALTER for å endre en lagret prosedyre er at den besvarer tilgnagstillatelser, mens CREATE gjør ikke det.
+@ProductName nvarchar(100),
+@UnitPrice decimal(18,2),
+@UnitsInStock int,
+@UnitsOnOrder int
+--- hvilken type variabler er dette? 
+AS
+BEGIN 
+--- begin prodecure ?
+    SET XACT_ABORT ON 
+    -- Specifies whether SQL Server automatically rolls back the current transaction when a Transact-SQL statement raises a run-time error.
+    BEGIN TRY
+        BEGIN TRANSACTION 
+            INSERT INTO Procedure(ProductName, ProductPrice, ProductsInStock, ProductsOnOrder)
+            VALUES (@ProductName, @UnitPrice, @UnitsInStock, @UnitsOnOrder)
+        COMMIT TRANSACTION
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION
+        --- STACKOVERFLOW It turns out that transaction can not be committed from inside the CATCH block if XACT_ABORT is set to ON.
+        THROW 51000, 'The product', 1
+    END CATCH
+END
+
+
+MEET THE GOAL?
+YES - single unit of work -> TRANSACTION/CATCH, error 51000, operation fails -> says ROLLOVER somewhere
+NO - i dont know what IF XACT_ABORT() <> is an why it is in the CATCH block 
+
+ANSWER: NO
++ with XACT_ABORT ON the INSERT INTO statement and the transaction will be rolled back when an error is raised, it would then not be possible to ROLLBACK it again in the
+    IF XACT_STATE()<> 0 ROLLBACK TRANSACTION statement.
++ when a SET XACT_ABORT is ON, if a tsql statement raises a run-time error, the entire transaction is terminated and rolled back.
++ XACT_STATE is a scalar funtion that reports the user transaction state og a current running request.
++ XACT_STATE indicates whether the request has an active user transaction, and whether the transaction is capable of being committed.
++ states of XACT_STATE:
+        + 0, there is no active user transaction for the current request
+        + 1, the current request has an active user transaction. the request can perform any actions, including writing data and committing the transaction.
+        + 2, the current request has an active user transaction, but an error has occured that has causeed the transaction to be classified as a uncommittable transaction
+
+
+
+
+
+
+
+
+
+
+
+QUESTION2
+
++ created a table by running
+CREATE TABLE Products(
+    ProductID int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    ProductName nvarchar(100) NULL,
+    UnitPrice decimal(18,2) NOT NULL,
+    UnitInStock int NOT NULL,
+    UnitsOnOrder int Null
+
+)
+
+
++ stored procedure
+CREATE PROCEDURE InsertProduct
+    @ProductName nvarchar(100),
+    @UnitPrice decimal(18,2),
+    @UnitInStock int, 
+    @UnitsOnOrder int
+
+AS 
+BEGIN
+    INSERT INTO Products (ProductName, ProductPrice, ProductsInStock, ProductsOnOrder)
+    VALUES (@ProductName,@UnitPrice,@UnitsInStock, @UnitsOnOrder)
+END
+
++ stored procedure meet the following requirements:
+    - insert product records as a single unit of work
+    - return error 51000
+    - insert operation fails, not be permanently written to the database
+
+
++ solution
+ALTER PROCEDURE InsertProduct
+@ProductName nvarchar(100),
+@UnitPrice decimal(18,2),
+@UnitsInStock int, 
+@UnitsOnOrder int
+AS
+BEGIN
+    BEGIN TRY
+        BEGIN TRANSACTION
+            INSERT INTO Products(ProductName, ProductPrice, ProductsInStock, ProductsOnOrder)
+            VALUES (@ProductName, @UnitPrice, @UnitInStock, @UnitsOnOrder)
+        COMMIT TRANSACTION
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION
+            IF @@ERROR = 51000
+                THROW
+        END CATCH
+END 
+
+
++ what is AS BEGIN END and when to use
++ transaction: BEGIN TRY END TRY BEGIN CATCH END CATCH
++ @@transcount, returns the number of BEGIN TRANSACTION statements that have occured on the current connection. 
+    the BEGIN TRANSACTION statement increments @@TRANCOUNT by 1.ROLLBACK TRANSACTION decrements @@TRANCOUNT to 0, except for ROLLBACK TRANSACTION
+
+YES: riktig syntax på ALTER PROCEDURE, TRY-CATCH
+NO: feil syntax av @@trancount og ROLLBACK
+
+
+ANSWER: NO
+ + a TRANSACTION is correctly defined for the INSERT INTO VALUES statements, and if there is an error in the transaction it will be caught and the 
+    transaction will be rolled back. However, error number 51000 will not be trturned, as it is only used in an IF @ ERROR = 51000 statement.
+    ----- ikke fordi rollback står før 51000?
++ @@TRANCOUNT returns the number of BEGIN TRANSACTION statements that have occurred on the current connection.
+
+
+
+
+
+QUESTION 3
++ run following table
+CREATE TABLE Products (
+    ProductID int IDENTITY (1,1), NOT NULL PRIMARY KEY,
+    ProductName nvarchar(100) NULL,
+    UnitPrice decimal(18,2) NOT NULL,
+    UnitsInStock int NOT NULL,
+    UnitsOnOrder int NULL
+)
+
++ stored procedure
+CREATE PROCEDURE InsertProduct
+    @ProductName nvarchar(100),
+    @UnitPrice decimal(18,2),
+    @UnitsInStock int,
+    @UnitsOnOrder int
+AS
+BEGIN
+    INSERT INTO Products(ProductName, ProductPrice, ProductsInStock, ProductsOnOrder)
+    VALUES (@ProductName, @UnitPrice, @UnitInStock, @UnitsOnOrder)
+END
+
+new requirements:
++ insert product records as a single unit of work
++ return error number 51000 when a product fails to insert into the database
++  operation fail, not write to the database
+
+solution:
+ALTER PROCEDURE InsertProduct
+@ProductName nvarchar(100),
+@UnitPrice decimal(18,2),
+@UnitInStock int,
+@UnitsOnOrder int
+AS
+BEGIN
+    BEGIN TRY
+        INSERT INTO Products(ProductName, ProductPrice, ProductsInStock, ProductsOnOrder)
+            VALUES (@ProductName, @UnitPrice, @UnitInStock, @UnitsOnOrder)
+    END TRY
+    BEGIN CATCH
+        THROW 51000, 'the product could not be created', 1
+        END CATCH
+END
+
+
+
++ ligger end catch på riktig plass? tab har vel ingenting å si. 
++ ser ingen andre feil
+
+svar: YES, meet the goal
+
+
+
+
+
+QUESTION 4
+
+CREATE TABLE Customer (
+    CustomerID  int IDENTITY(1,1) PRIMARY KEY,
+    FirstName varchar(50) NULL, 
+    LastName varchar(50) NOT NULL,
+    DateOfBirth date NOT NULL,
+    CreditLimit money CHECK(CreditLimit < 10000),
+    TownID int NULL REFERENCE dbo.Town(TownID),
+    CreatedDate datetime DEFAULT(Getdate())
+)
+
+oppgave: ensure both records are inserted rr neither record is inserted.
+
+solution:
+INSERT INTO Customer(FirstName, LastName, DateOfBirth, CreditLimit, CreatedDate)
+VALUES('yvonne', 'mckay', '1984-05-25', 9000, GETDATE())
+INSERT INTO Customer(FirstName, LastName, DateOfBirth, CreditLimit, CreatedDate)
+VALUES('jossef', 'goldberg', '1995-06-03', 5500, GETDATE())
+GO
+
+
+answer: NO
+
+BECAUSE:
++ how to insert one rows
+    INSERT INTO InsertDemo 
+        VALUES ('John','2000-08-12',5,'London','56896652')
+
++ how to insert multiple rows
+    INSERT INTO InsertDemo 
+        VALUES ('Jack','2000-02-10',5,'London','56552244'),
+            ('Daniel','2000-07-24',5,'Oxford','56448899'), 
+            ('Gonzalo','2000-01-13',5,'Cambridge','56254896')
+
+
+
+
+QUESTION 5
+
+CREATE TABLE Customer (
+    CustomerID int INDENTITY(1,1) PRIMARY KEY,
+    FirstName varchar(50) NULL,
+    LastName varchar(50) NOT NULL,
+    DateOfBirth date NOT NULL,
+    CreditLimit money CHECK (CreditLimit < 10000),
+    TownID int NULL REFERENCE DBO.tOWN(TownID),
+    CreatedDate datetime DEFAULT(Getdate())
+)
+
+oppgave: ensure bith or neither are inserted.
+- ser det med engang, helt lik oppgave 4.
+
+1/41
+
+QUESTION 6
+YES, ser svaret. Lik 4 og 5
+
+
+QUESTION 7
+database that tracks orders and deliveries for customers in north america.
++ Sales.customers.
++ Application.Cities
++ Sales.CustomersCategories
+
+oppgave: customer directory application. 
+- App must list customers by the area code of their number. area code is first three characters of phone number
+- main page based on an indexed view that contains the area and phone number for all customers.
+- return from the PhoneNumber field
+
+
+CREATE FUNCTION AreaCode(
+    @phoneNumber nvarchar(20)
+)
+RETURNS
+TABLE
+WITH SCHEMABINDING
+AS
+RETURN (
+    SELECT TOP 1 @phoneNumber as PhoneNumber, VALUE as AreaCode
+    FROM STING_SPLIT(@PhoneNumber,'-')
+)
+
++ SELECT TOP 1 @phoneNumber as PhoneNumber, VALUE as AreaCode
+    VELG FØRSTE DEL AV @PhoneNumber SOM ER PhoneNumber, OG SETT FERDI SOM AreaCode
++ FROM STING_SPLIT(@PhoneNumber,'-')
+    FRA PhoneNumber SOM ER SPITTET MED '-'
+
+
+SCHEMABINDING: 
++ binds the view to the schema of the underlying table or tables.
++ when schemabinding is specifies, the base table or tables cannot be modified in a way that would affect the view difinition. 
+    la oss si du har tre tabeller, en endring vil da for eksempel være at du lager en til tabel som endrer view schema. dette kan ikke skje under schemabinding
++ VIEW SCHEMA DEFINES THE DESIGN OF THE DATABASE AT THE VIEW LEVEL OF THE DATA ABSTRACTION.
+    IT DEFINES HOW AN END USER WILL INTERACT WITH THE DATABASE SYSTEM. GENERELL OPPSETT AV DATABASE.
++ the view definition itself must first be modified or dropped to remove dependencies on the table that is to be modified. 
++ when use schemabinding, select_statement must include the two-part names (schema.object) of tables, views or user-defined functions. 
++ must be same database. 
++ cannot be dropped if unless view is dropped or changed to no schema binding. 
+
+
+just return a field...? possible but notes for PhoneNumber says does not allow new values. 
+Are we adding a new value or create a new field?
+
+SVAR: NO. BECAUSE IT SAYS RETURNS TABLE WITH ...
+
+
++The function should return nvarchar(10) and not a TABLE.
+
+https://sqlserverguides.com/sql-server-function-return-table/
+https://www.itexams.com/exam/70-761?
+
+
+
+
+
+QUESTION 8
+database that tracks orders and delieveries for customers in North America.
++ Sales.Customers 
++ Application.Cities 
++ Sales.CustomersCategories 
+
+oppgave: list custom
+
+CREATE FUNCTION AreaCode (
+    @PhoneNumber nvarchar(20)
+)
+RETURNS nvarchar(10)
+AS
+BEGIN
+    DECLARE @areCode nvarchar(max)
+    SELECT TOP 1 @AreaCode = VALUE FROM STRING_SPLIT(@phoneNumber, '-')
+    RETURN @AreaCode
+END
+
 

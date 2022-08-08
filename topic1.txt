@@ -301,7 +301,7 @@ RETURN (
 
 SCHEMABINDING: 
 + binds the view to the schema of the underlying table or tables.
-+ when schemabinding is specifies, the base table or tables cannot be modified in a way that would affect the view difinition. 
++ when schemabinding is specified, the base table or tables cannot be modified in a way that would affect the view difinition. 
     la oss si du har tre tabeller, en endring vil da for eksempel være at du lager en til tabel som endrer view schema. dette kan ikke skje under schemabinding
 + VIEW SCHEMA DEFINES THE DESIGN OF THE DATABASE AT THE VIEW LEVEL OF THE DATA ABSTRACTION.
     IT DEFINES HOW AN END USER WILL INTERACT WITH THE DATABASE SYSTEM. GENERELL OPPSETT AV DATABASE.
@@ -332,7 +332,9 @@ database that tracks orders and delieveries for customers in North America.
 + Application.Cities 
 + Sales.CustomersCategories 
 
-oppgave: list custom
+oppgave: list customers by the area code of their phone number. return the area code from the phonenumber field.
+
+
 
 CREATE FUNCTION AreaCode (
     @PhoneNumber nvarchar(20)
@@ -344,5 +346,116 @@ BEGIN
     SELECT TOP 1 @AreaCode = VALUE FROM STRING_SPLIT(@phoneNumber, '-')
     RETURN @AreaCode
 END
+
+
+
+svar: NO
+as the result of the function will be used in an indexed view we should use schemabinding. 
+
+how do i know if it will be used in an indexed view? because the oppgave says:
+The main page of the application will be based on an indexed view that contains the area and phone number of all costumers
+
+
+
+
+QUESTION 9
+database with
++ sales.customers
++ application.Cities
++ sales.CustomersCategories
+
+oppgave: area code by phone number. the main page of the application will be based on an indexed view that contains the area and phone number for all customers. 
+return the area code from the phonenumber field. 
+
+
+CREATE FUNCTION AreaCode(
+    @phoneNumber nvarchar(20)
+)
+RETURNS nvarchar(10)
+WITH SCHEMABINDING
+AS
+BEGIN
+    DECLARE @areaCode nvarchar(max)
+    SELECT @areaCode = value FROM STRING_SPLIT(@phoneNumber, '-')
+    return @areaCode
+END
+
+
+
+svar: NO
++ we need to SELECT TOP 1 @areaCode to ensure that only one value is returned.
+
+
+QUESTION 10
++ to update tasks that are not yet started.
++ UPDATE Task SET StartTime = GETDATE() WHERE StartTime IS NULL
++ return the total count of tasks that are impacted by this UPDATE operation, but are not associated with a project.
+
+- not associated with a project, excludere A & B. 
+
+forskjell mellom C & D
+C)
+UPDATE Task SET StartTime = GETDATE() OUTPUT inserted.TaskId, INTO @startedTasks WHERE StartTime is NULL
+
+D)
+UPDATE Task SET StartTime = GETDATE() OUTPUT deleted.TaskId, INTO @startedTasks WHERE StartTime is NULL 
+
+
+--ikke delete vel? bare å oppdatere
+mitt svar: C FEIL 
+
+
+RIKTIG SVAR : B.
+DECLARE @startedTasks TABLE(TaskId int, ProjectId int)
+UPDATE Task SET StartTime = GETDATE() OUTPUT deleted.TaskId, deleted.ProjectId INTO @startedTasks
+WHERE StartTime is NULL
+SELECT COUNT(*) FROM @startedTasks WHERE ProjectId IS NULL
+
++ because, the WHERE clause of the third line should be WHERE as we want to count the tasks that are not associated with a project.   
+
+
+
+
+QUESTION 11
++ project table
++ task table
+
+oppgave: you need to identify the owner of each task by using the following rules
++ return each tasks owner if the task has an owner
++ if task has no owner, but is associated with a project that has an owner, return the projects owner
++ return the value -1 fir all other cases. 
+
+SELECT T.TaskId, T.TaskName, COALESCE (T.UserId, P.UserId, 1) AS OwnerUserId
+FROM Task T RIGHT JOIN Project P ON T.ProjectId = P.ProjectId
+
+coalesce - evaluates the arguments in order and returns the current value of the first expression that initially does not evaluate to NULL
+
+(T.UserId, P.UserId, -1) 
++ return each tasks owner if the task has an owner
++ if a task has no owner, but is associated with a project that has an owner, return the projects owner. 
++ return the value -1 for all other cases   
+
+!!! COALESCE (T.UserId, P.UserId, 1)  !!!
+
+right join
++ returns all rows from the right table (table2), with the matching rows in the left table (table).
++ The result is NULL in the left side when there is no matching
++ here the right side could be NULL as the projectID of the task could be NULL
+
+
+
+
+QUESTION 12
++ project table
++ task table
+
+TASK LEVEL - 
+tasks that have no parent task [task level] = 0
+tasks that have a parent task [task level] = [parent task's level] + 1
+
+oppgave: you need to determine the task level for each task in the hierarchy
+
+which five tsql segments should you use to develop the solution? 
+
 
 

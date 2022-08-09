@@ -449,13 +449,76 @@ QUESTION 12
 + project table
 + task table
 
-TASK LEVEL - 
+TASK LEVELIS DEFINED USING FOLLOWING RULES. 
 tasks that have no parent task [task level] = 0
 tasks that have a parent task [task level] = [parent task's level] + 1
 
-oppgave: you need to determine the task level for each task in the hierarchy
+oppgave: 
++ you need to determine the task level for each task in the hierarchy
++ which five tsql segments should you use to develop the solution? 
 
-which five tsql segments should you use to develop the solution? 
+(tsql segments, bare tsql code. stokke om rekkefølgen)
 
 
+)
+SELECT * FROM TaskWithLevel
+
+SELECT CAST (NULL AS int) AS ParentTaskId, T.TaskId, T.TaskName, 0 AS TaskLevel
+FROM Task T WHERE T.ParentTaskId is NULL
+
+With TaskWithLevel (ParentTaskId, TaskId, TaskName, TaskLevel) as( )
+
+UNION
+
+
+SELECT R.TaskId AS ParentTaskId, T.TaskId, T.TaskName, R.TaskLevel + 1 AS TaskLevel
+FROM Task T INNER JOIN TaskWithLevel R ON T.ParentTaskId = R.TaskId 
+
+SELECT T.TaskId AS ParentTaskId, CAST(null AS int) AS TaskId, T.TaskName, 0 AS TaskLevel FROM Task T WHERE T.ParentTaskIS NULL 
+
+
+UNION ALL 
+
+
+svar:
+    With TaskWithLevel (ParentTaskId, TaskId, TaskName, TaskLevel) as (
+    ########################################################################
+
+    SELECT CAST (NULL AS int) AS ParentTaskId, T.TaskId, T.TaskName,
+    0 AS TaskLevel
+    FROM Task T WHERE T.ParentTaskId IS 
+    NULL
+    #########################################################################    
+    UNION ALL
+    #########################################################################
+    SELECT R.TaskId AS ParentTaskId,
+    T.TaskId, T.TaskName, R.TaskLevel + 1
+    AS TaskLevel
+    FROM Task T INNER JOIN TaskWithLevel
+    R ON T.ParentTaskId = R.TaskId
+    #########################################################################
+    )
+    SELECT * FROM TaskWithLevel
+
+
+
+block 1
+with common table expression specifies a temporary named result set, known as a common table expression.  CTE 
+
+block 2
++ This statement selects all tasks with task level 0
++ the ParentTaskID could be null so we should use CAST(NULL AS INT) AS ParentTaskID 
+
+block 3
+In a Recurcive CTE Union ALL must be used. 
+
+block 4
+SELECT R.TaskId as ParentTaskId, TaskI
+
+
+
+
+
+
+QUESTION13 
 

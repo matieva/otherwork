@@ -1,0 +1,45 @@
+basic querying
++ SELECT
+
++ TOP - første
+    (SELECT TOP 10...)
+
++ FROM
+
++ WHERE - filter for condition
+    WHERE PersonType = N'Employee'
+    operators in where clause: =, <, >, >=, <=, <>, between, like, in
+
++ UNION - kombinere resultatet av to eller flere SELECT. only DISTINCT values
+
++ UNION ALL -  duplisere verdier av kombinert resualt fra SELECT.
+
++ OFFSET - utenom 
+    (... OFFSET 10 ROWS)
+    offset som variabel: @StartingRowNumber AS INTEGER = 5
+    use: OPPSET @StartingRowNumber ROWS
+
++ DISTINCT - forskjellige
+    (SELECT DISTINCT...)
+
++ EXCEPT - filter for condition
+
++ INTERSECT - 
++ predicates and sargability
++ useful functions
++ joins
++ proper indenting
+
+
+intermediate quering
+modifying and defining qyering
+security
+programmability
+first reponder kit
+indexes
+statistics
+query tuning
+maintenance and administration
+
+
+

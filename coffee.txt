@@ -1,1 +1,43 @@
+common table expressions CTE using WITH clause
 
+syntax:
+WITH expression_name[(column_name [,...])]
+AS
+    (CTE_definition)
+SQL_statement;
+
+
++ specify the expression name, which you can refer later in a query.
+
++ specify a list of comma-separated columns after the expression_name. The number of column must be the same as the number of columns defined in the CTE_definition. 
+WITH expression_name (staff, sales, year) 
+
+
++ then, use the AS keyword after the expression name or column list if the column list is specified
+AS (CTE_definition)
+
+
++ define a SELECT statement whose result set populates the common table expression.
+(
+    SELECT 
+        first_name + ' ' + last_name
+        SUM(quantity * list_price * (1 - discount)),
+        YEAR(order_date)
+    FROM
+            sales.orders o
+        INNER.JOIN sales.order_items i ON i.order_id = o.order_id
+        INNER JOIN sales.staffs s ON s.staff_id = o.staff_id
+        GROUP BY
+            first_name + ' ' + last_name,
+            year(order_date)
+)
+
++ (finally) refer to the common table expression in a query (SQL_statement;) such as SELECT, INSERT, UPDATE, DELETE, MERGE
+
+SELECT  
+    staff,
+    sales
+FROM 
+    cte_sales_amounts
+WHERE 
+    year = 2018;

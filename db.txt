@@ -1,0 +1,218 @@
+CREATE TABLE PRODUCTS(
+    PRODUCTID INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    PRODUCTNAME NVARCHAR(100) NULL,
+    UNITPRICE DECIMAL(18,2) NOT NULL,
+    UNITSINSTOCK INT NOT NULL,
+    UNITSONORDER INT NULL
+)
+
+stored:
+
+CREATE PROCEDURE INSERTPRODUCT
+    @PRODUCTNAME NVARCHAR(100),
+    @UNITPRICE DECIMAL(18,2),
+    @UNITSINSTOCK INT,
+    @UNITSONORDER INT,
+AS BEGIN
+    INSERT INTO PRODUCTS(PRODUCTNAME, PRODUCTPRICE, PRODUCTINSTOCK, PRODUCTSONORDER)
+    VALUES (@PRODUCTNAME, @UNITPRICE, @UNITSINSTOCK, @UNITSONORDER)
+END
+
+
++ insert product records as a single unit of work
++ return error number 51000 when a product fails to insert into the database. 
++ if a product record insert operations fails, the product information must not be parmanently written to the database. 
+
+
+ALTER PROCEDURE
+@ProductName nvarchar(100),
+@UnitPrice decimal(18,2),
+@UnitsInStock int,
+@UnitsOnOrder int
+
+AS
+BEGIN
+    SET_XACT_ABORT ON
+    BEGIN TRY
+        BEGIN TRANSACTION
+            INSERT INTO Products(ProductName, ProductPrice, ProductsInStock, ProductsOnOrder)
+            VALUES (@ProductName, @UnitPrice, @UnitsInStock, @UnitsOnOrder)
+        COMMIT TRANSACTION
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION
+        THORW 51000, 'The product could not be created.', 1
+    END CATCH
+END
+
+
+
+
+comment ### NO
+1.
+with X_ABORT ON the INSERT INTO statement and the transaction will be rolled back when an error is raised, 
+it would then not be possible to ROLLBACK it again in the IF XACT_STATE() <>
+
+2.
+SET_XACT_ABORT is ON, raises error -> entire transaction rolled back. 
+XACT_STATE() is scalar function that reports the user transaction state of current running request.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+question 2
+
+stored procedure:
+CREATE PROCEDURE INSERTPRODUCT
+@ProductName nvarchar(100),
+@UnitPrice decimal(18,2),
+@UnitsInStock int,
+@UnitsOnOrder int
+
+AS
+BEGIN
+    INSERT INTO (ProductName, ProductPrice, ProductsInStock, ProductsOnOrder)
+    VALUES (@ProductName, @UnitPrice, @UnitsInStock, @UnitsOnOrderit)
+END
+
+
++ insert product records as a single unit of work
++ return error number 51000 when a product fails to insert into the database
++ if a product record insert operation fails, the product information must not be permanently written to the database.
+
+
+
+
+ALTER PROCEDURE INSERTPRODUCT
+@ProductName nvarchar(100),
+@UnitPrice decimal(18,2),
+@UnitsInStock int,
+@UnitsOnOrder int
+
+AS
+BEGIN
+    BEGIN TRY
+        BEGIN TRANSACTION
+            INSERT INTO (ProductName, ProductPrice, ProductsInStock, ProductsOnOrder)
+            VALUES (@ProductName, @UnitPrice, @UnitsInStock, @UnitsOnOrderit)
+        COMMIT TRANSACTION
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION
+            IF @@ERRROR = 51000
+                THORW
+        END CATCH
+END
+
+
+
+
+comment  ### NO
+1.
+a transaction is correctly defined for the INSERT INTO .VALUES statement, and if there is an error in the transaction it will be 
+caught and the transaction will be rolled back. 
+
+2. error number 51000 will not be returned, as it is only used in an IF @ERROR = 51000 statement. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+question 3
+
+stored procedure:
+CREATE PROCEDURE InsertProduct 
+@ProductName nvarchar(100),
+@UnitPrice decimal(18,2),
+@UnitsInStock int,
+@UnitsOnOrder int
+
+AS
+BEGIN
+    INSERT INTO Products(ProductName, ProductPrice, ProductsInStock, ProductsOnOrder)
+    VALUES (@ProductName, @UnitPrice, @UnitsInStock, @UnitsOnOrderit)
+END
+
+
++ insert product records as a single unit of work
++ return error number 51000 when a product fails to insert into the database. 
++ if a product record insert operation fails, the product information must not be permanently written to database. 
+
+ALTER PROCEDURE InsertProduct
+@ProductName nvarchar(100),
+@UnitPrice decimal(18,2),
+@UnitsInStock int, 
+@UnitsOnOrder int
+AS
+BEGIN
+    BEGIN TRY
+        INSERT INTO Products(ProductName, ProductPrice, ProductsInStock, ProductsOnOrder)
+            VALUES (@ProductName, @UnitPrice, @UnitsInStock, @UnitsOnOrderit)
+    END TRY
+    BEGIN CATCH
+        THROW 510000,'The product could not be created', 1
+        END CATCH
+END
+
+
+
+comment   ###YES
+1.
+if the INSERT INTO  raises an error, the statement will be caught and an error 51000 will be thrown.
+in this case no records will have been inserted
+
+2. 
+you can implement error handling for the INSERT statement by specifying the statement in a TRY CATCH construct. 
+if an INSERT statement vioated a constraint or rule, or if it has a value incompatible with the data type of the column,
+the statement fails and an error message is returned. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+question 4
+
+CREATE TABLE Customer (
+    CustomerID int IDENTITY(1,1) PRIMARY KEY,
+    FirstName varchar(50) NULL,
+    LastName varchar(50) NOT NULL,
+    DateOfBirth date NOT NULL,
+    CreditLimit money CHECK (CreditLimit < 10000),
+    TownID int NULL REFERENCE dbo.Town(TownID),
+    CreatedDate datetime DEFAULT(Getdate())
+)
+
++ insert two records
+
+INSERT INTO Customer (FirstName, LastName, DateOfBirth, CreditLimit, CreatedDate)
+VALUES ('Yvonne', 'McKay', '1984-05-25', 9000, GETDATE())
+INSERT INTO Customer (FirstName, LastName, DateOfBirth, CreditLimit, CreatedDate)
+VALUES ('Jossef', 'Goldberg', '1984-05-25', 9000, GETDATE())
+
+
+
+comment   ###NO
+1. there are two separated INSERT INTO statements, cannot ensure both or neither records are inserted. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+question 7
++ directory application
++ list customers by the area of their phone number first three digits
++ main page will be based on an indexed view that contains the area and phone number for all customers
++ return area kode from phonenumber
+
+CREATE FUNCTION AreaCode(
+    @phoneNumber nvarchar(20)
+)
+RETURNS
+TABLE
+WITH SCHEMABINDING
+AS
+RETURN (
+    SELECT TOP 1 @phoneNumber as PhoneNumber, VALUE as AreaCode
+    FROM STRING_SPLIT(@phoneNumber, '-')
+)
+
+
+
+
+

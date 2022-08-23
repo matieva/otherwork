@@ -213,6 +213,41 @@ RETURN (
 )
 
 
+legge til flere endringer....
 
 
+question 7
++ directory application
++ list customers by the area of their phone number first three digits
++ main page will be based on an indexed view that contains the area and phone number for all customers
++ return area kode from phonenumber
 
+CREATE FUNCTION AreaCode(
+    @phoneNumber nvarchar(20)
+)
+RETURNS
+TABLE
+WITH SCHEMABINDING
+AS
+RETURN (
+    SELECT TOP 1 @phoneNumber as PhoneNumber, VALUE as AreaCode
+    FROM STRING_SPLIT(@phoneNumber, '-')
+)
+
+question 7
++ directory application
++ list customers by the area of their phone number first three digits
++ main page will be based on an indexed view that contains the area and phone number for all customers
++ return area kode from phonenumber
+
+CREATE FUNCTION AreaCode(
+    @phoneNumber nvarchar(20)
+)
+RETURNS
+TABLE
+WITH SCHEMABINDING
+AS
+RETURN (
+    SELECT TOP 1 @phoneNumber as PhoneNumber, VALUE as AreaCode
+    FROM STRING_SPLIT(@phoneNumber, '-')
+)
